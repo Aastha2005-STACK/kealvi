@@ -13,6 +13,14 @@ export function addQuestion(q: Question): Question {
   return q;
 }
 
+export function deleteQuestion(id: string): Question | null {
+  const q = questions.find((x) => x.id === id);
+  if (!q) return null;
+
+  questions = questions.filter((x) => x.id !== id);
+  return q;
+}
+
 export function voteQuestion(id: string): Question | null {
   const q = questions.find((x) => x.id === id);
   if (!q) return null;

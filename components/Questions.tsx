@@ -48,6 +48,19 @@ export default function Questions({ initial }: { initial: Question[] }) {
     }
   }
 
+  async function handleDelete(id: string) {
+    // optimistic: remember the current list, then drop the question on screen
+    const previous = questions;
+    setQuestions((qs) => qs.filter((q) => q.id !== id));
+
+    const res = await fetch(`/api/questions/${id}`, { method: "DELETE" });
+
+    // server said no — restore the list we had before
+    if (!res.ok) {
+      setQuestions(previous);
+    }
+  }
+
   const sorted = [...questions].sort((a, b) => b.votes - a.votes);
 
   return (
@@ -87,16 +100,25 @@ export default function Questions({ initial }: { initial: Question[] }) {
                 {q.author}
               </p>
             </div>
-            <button
-              onClick={() => upvote(q.id)}
-              aria-label="Upvote"
-              className="flex shrink-0 flex-col items-center rounded-xl border border-gray-200 px-3 py-1.5 text-brand transition-colors hover:border-brand hover:bg-brand/5"
-            >
-              <span className="text-sm leading-none">▲</span>
-              <span className="text-sm font-semibold tabular-nums">
-                {q.votes}
-              </span>
-            </button>
+            <div className="flex shrink-0 items-start gap-2">
+              <button
+                onClick={() => upvote(q.id)}
+                aria-label="Upvote"
+                className="flex shrink-0 flex-col items-center rounded-xl border border-gray-200 px-3 py-1.5 text-brand transition-colors hover:border-brand hover:bg-brand/5"
+              >
+                <span className="text-sm leading-none">▲</span>
+                <span className="text-sm font-semibold tabular-nums">
+                  {q.votes}
+                </span>
+              </button>
+              <button
+                onClick={() => handleDelete(q.id)}
+                aria-label="Delete"
+                className="flex shrink-0 items-center rounded-xl border border-gray-200 px-3 py-2 text-gray-400 transition-colors hover:border-red-400 hover:bg-red-50 hover:text-red-500"
+              >
+                <span className="text-sm leading-none">✕</span>
+              </button>
+            </div>
           </li>
         ))}
       </ul>

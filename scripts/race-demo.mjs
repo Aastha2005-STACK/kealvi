@@ -21,14 +21,14 @@ const N = Number(process.argv[3] ?? 50);
 
 if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
   console.error(
-    "Missing Supabase env vars. Run with:  node --env-file=.env.local scripts/race-demo.mjs"
+    "Missing Supabase env vars. Run with:  node --env-file=.env.local scripts/race-demo.mjs",
   );
   process.exit(1);
 }
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
+  process.env.SUPABASE_SERVICE_ROLE_KEY,
 );
 
 // POST with retries — the dev server compiles each route on its first hit.
@@ -59,7 +59,7 @@ await post(`${base}/api/questions/${q.id}/vote`); // warm the vote route
 
 console.log(`\nfiring ${N} concurrent votes...`);
 await Promise.all(
-  Array.from({ length: N }, () => post(`${base}/api/questions/${q.id}/vote`))
+  Array.from({ length: N }, () => post(`${base}/api/questions/${q.id}/vote`)),
 );
 
 const { data } = await supabase
@@ -74,8 +74,8 @@ console.log(`actual votes:   ${data.votes}`);
 console.log(
   data.votes < expected
     ? `❗ LOST ${expected - data.votes} votes to the read-then-write race`
-    : `✅ no votes lost`
+    : `✅ no votes lost`,
 );
 
-await supabase.from("questions").delete().eq("id", q.id);
+// await supabase.from("questions").delete().eq("id", q.id);
 console.log("\ncleaned up test question.");
