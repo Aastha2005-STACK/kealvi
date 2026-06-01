@@ -11,11 +11,15 @@ type Question = {
 
 export default function QuestionsList({
   initialQuestions,
+  initialHasMore,
 }: {
   initialQuestions: Question[];
+  initialHasMore: boolean;
 }) {
   const [questions, setQuestions] = useState(initialQuestions);
   const [draft, setDraft] = useState("");
+  const [hasMore, setHasMore] = useState(initialHasMore);
+  const [loading, setLoading] = useState(false);
 
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => setHydrated(true), []);
@@ -54,6 +58,15 @@ export default function QuestionsList({
     }
   }
 
+  async function loadMore() {
+    setLoading(true);
+    const res = await fetch(`/api/questions?offset=${questions.length}`);
+    const data = await res.json();
+    setQuestions((qs) => [...qs, ...data.questions]);
+    setHasMore(data.hasMore);
+    setLoading(false);
+  }
+
   return (
     <div className="space-y-4">
       <p className="text-sm text-gray-500">
@@ -88,6 +101,16 @@ export default function QuestionsList({
           </li>
         ))}
       </ul>
+
+      {hasMore && (
+        <button
+          onClick={loadMore}
+          disabled={loading}
+          className="rounded-md border px-4 py-2 disabled:opacity-50"
+        >
+          {loading ? "Loading…" : "Load more"}
+        </button>
+      )}
     </div>
   );
 }
