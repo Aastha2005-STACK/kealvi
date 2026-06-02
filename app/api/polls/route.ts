@@ -6,6 +6,35 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+export async function GET() {
+  const { data: polls, error } = await supabase
+    .from("polls")
+    .select(`
+      *,
+      poll_options (*)
+    `)
+    .order("created_at", { ascending: false })
+    .limit(1);
+
+  if (error) {
+    return NextResponse.json(
+      { error: error.message },
+      { status: 500 }
+    );
+  }
+
+  const poll = polls?.[0];
+
+  return NextResponse.json({
+    poll: poll
+      ? {
+          ...poll,
+          options: poll.poll_options,
+          totalVotes: 0,
+        }
+      : null,
+  });
+}
 // POST /api/polls
 export async function POST(req: Request) {
   try {

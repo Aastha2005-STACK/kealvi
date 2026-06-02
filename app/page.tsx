@@ -12,9 +12,14 @@ export default async function Page() {
   const { questions, hasMore } = await getQuestionsPage(0, PAGE_SIZE);
 
   return (
-    <main className="mx-auto max-w-2xl p-6">
-      <h1 className="mb-4 text-2xl font-medium">Live Q&amp;A</h1>
-      <QuestionsList initialQuestions={questions} initialHasMore={hasMore} />
-    </main>
-  );
-}
+  <main className="mx-auto max-w-2xl p-6">
+    <h1 className="mb-4 text-2xl font-medium">Live Q&A</h1>
+
+    <PollSection />
+
+    <QuestionsList
+      initialQuestions={questions}
+      initialHasMore={hasMore}
+    />
+  </main>
+);
