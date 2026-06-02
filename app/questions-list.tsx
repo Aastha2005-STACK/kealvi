@@ -112,7 +112,11 @@ export default function QuestionsList({
       <ul className="space-y-3">
         {questions.map((q) => (
           <li
+<<<<<<< HEAD
             key={`${q.id}-${q.body}`}
+=======
+           key={`${q.id}-${q.body}`}
+>>>>>>> cff2f43 (Updated files)
             className="flex items-center gap-3 rounded-lg border p-3"
           >
             <button

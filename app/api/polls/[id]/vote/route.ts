@@ -7,15 +7,17 @@ const supabase = createClient(
 );
 
 // POST /api/polls/:id/vote
+import { NextRequest, NextResponse } from "next/server";
+
 export async function POST(
-  req: Request,
-  { params }: { params: { id: string } }
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const pollId = params.id;
+    const { id: pollId } = await params;
+
     const body = await req.json();
     const { option_id, voter_id } = body;
-
     if (!option_id || !voter_id) {
       return NextResponse.json(
         { error: "Missing option_id or voter_id" },
