@@ -1,3 +1,4 @@
+import PollSection from "./components/PollSection";
 import QuestionsList from "./questions-list";
 import { getQuestionsPage } from "@/lib/questions";
 
