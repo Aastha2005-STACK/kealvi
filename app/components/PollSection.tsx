@@ -7,7 +7,6 @@ export default function PollSection() {
   const [loading, setLoading] = useState(false);
   const [voted, setVoted] = useState(false);
 
-  // demo voter id (baad me auth se replace hoga)
   const voterId = "user_1";
 
   useEffect(() => {
@@ -15,35 +14,70 @@ export default function PollSection() {
   }, []);
 
   async function fetchPoll() {
-    const res = await fetch("/api/polls");
-    const data = await res.json();
-    setPoll(data.poll);
+    try {
+      const res = await fetch("/api/polls");
+
+      if (!res.ok) {
+        throw new Error(`Failed to fetch poll: ${res.status}`);
+      }
+
+      const data = await res.json();
+      setPoll(data.poll);
+    } catch (error) {
+      console.error("Fetch poll error:", error);
+    }
   }
 
   async function vote(optionId: string) {
-    setLoading(true);
+    try {
+      setLoading(true);
 
-    const res = await fetch(`/api/polls/${poll.id}/vote`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        option_id: optionId,
-        voter_id: voterId,
-      }),
-    });
+      const res = await fetch(`/api/polls/${poll.id}/vote`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          option_id: optionId,
+          user_id: voterId,
+        }),
+      });
 
-    const data = await res.json();
+      const text = await res.text();
 
-    if (data.success) {
-      setVoted(true);
-      fetchPoll(); // refresh results
+      let data;
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        console.error("Invalid JSON response:", text);
+        alert("Server returned invalid response. Check API logs.");
+        return;
+      }
+
+      if (!res.ok) {
+        console.error("Vote API error:", data);
+        alert(data?.error || "Failed to submit vote");
+        return;
+      }
+
+      if (data.success) {
+        setVoted(true);
+        await fetchPoll();
+      }
+    } catch (error) {
+      console.error("Vote error:", error);
+      alert("Something went wrong while voting");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   }
 
   if (!poll) {
-    return <div className="p-4 border rounded">Loading poll...</div>;
+    return (
+      <div className="p-4 border rounded">
+        Loading poll...
+      </div>
+    );
   }
 
   return (
@@ -61,14 +95,13 @@ export default function PollSection() {
             key={opt.id}
             disabled={loading || voted}
             onClick={() => vote(opt.id)}
-            className="w-full text-left border p-2 rounded hover:bg-gray-100"
+            className="w-full text-left border p-2 rounded hover:bg-gray-100 disabled:opacity-50"
           >
             <div className="flex justify-between">
               <span>{opt.option_text}</span>
               <span>{percent}%</span>
             </div>
 
-            {/* result bar */}
             <div className="h-2 bg-gray-200 mt-1 rounded">
               <div
                 className="h-2 bg-blue-500 rounded"

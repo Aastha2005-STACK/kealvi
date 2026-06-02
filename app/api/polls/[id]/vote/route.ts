@@ -1,13 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
-
-// POST /api/polls/:id/vote
-import { NextRequest } from "next/server";
 
 export async function POST(
   req: NextRequest,
@@ -17,21 +14,26 @@ export async function POST(
     const { id: pollId } = await params;
 
     const body = await req.json();
-    const { option_id, voter_id } = body;
-    if (!option_id || !voter_id) {
+    const { option_id, user_id } = body;
+
+    if (!option_id || !user_id) {
       return NextResponse.json(
-        { error: "Missing option_id or voter_id" },
+        { error: "Missing option_id or user_id" },
         { status: 400 }
       );
     }
 
-    // 🔒 Check if user already voted (prevents double voting)
-    const { data: existingVote } = await supabase
+    // Check if user already voted
+    const { data: existingVote, error: checkError } = await supabase
       .from("poll_votes")
       .select("*")
       .eq("poll_id", pollId)
-      .eq("voter_id", voter_id)
+      .eq("user_id", user_id)
       .maybeSingle();
+
+    if (checkError) {
+      throw checkError;
+    }
 
     if (existingVote) {
       return NextResponse.json(
@@ -40,28 +42,35 @@ export async function POST(
       );
     }
 
-    // ✅ Insert vote
+    // Insert vote
     const { data, error } = await supabase
       .from("poll_votes")
       .insert([
         {
           poll_id: pollId,
           option_id,
-          voter_id,
+          user_id,
         },
       ])
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error("SUPABASE INSERT ERROR:", error);
+      throw error;
+    }
 
     return NextResponse.json({
       success: true,
       vote: data,
     });
   } catch (err: any) {
+    console.error("VOTE ERROR:", err);
+
     return NextResponse.json(
-      { error: err.message },
+      {
+        error: err?.message || "Unknown error",
+      },
       { status: 500 }
     );
   }
