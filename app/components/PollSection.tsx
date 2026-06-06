@@ -22,6 +22,10 @@ export default function PollSection() {
       }
 
       const data = await res.json();
+
+      console.log("Poll API Response:", data);
+      console.log("Poll ID:", data?.poll?.id);
+
       setPoll(data.poll);
     } catch (error) {
       console.error("Fetch poll error:", error);
@@ -29,6 +33,15 @@ export default function PollSection() {
   }
 
   async function vote(optionId: string) {
+    console.log("Poll Object:", poll);
+    console.log("Poll ID:", poll?.id);
+    console.log("Option ID:", optionId);
+
+    if (!poll?.id) {
+      alert("Poll ID is undefined");
+      return;
+    }
+
     try {
       setLoading(true);
 
@@ -46,17 +59,22 @@ export default function PollSection() {
       const text = await res.text();
 
       let data;
+
       try {
         data = text ? JSON.parse(text) : {};
       } catch {
         console.error("Invalid JSON response:", text);
-        alert("Server returned invalid response. Check API logs.");
+        alert("Server returned invalid response");
         return;
       }
 
       if (!res.ok) {
+        console.error("Status:", res.status);
         console.error("Vote API error:", data);
-        alert(data?.error || "Failed to submit vote");
+
+        alert(
+          `Status: ${res.status}\n${data?.error || "Failed to submit vote"}`
+        );
         return;
       }
 
@@ -73,11 +91,7 @@ export default function PollSection() {
   }
 
   if (!poll) {
-    return (
-      <div className="p-4 border rounded">
-        Loading poll...
-      </div>
-    );
+    return <div className="p-4 border rounded">Loading poll...</div>;
   }
 
   return (

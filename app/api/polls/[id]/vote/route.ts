@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
@@ -16,6 +16,17 @@ export async function POST(
     const body = await req.json();
     const { option_id, user_id } = body;
 
+    console.log("Poll ID:", pollId);
+    console.log("Option ID:", option_id);
+    console.log("User ID:", user_id);
+
+    if (!pollId) {
+      return NextResponse.json(
+        { error: "Poll ID is missing" },
+        { status: 400 }
+      );
+    }
+
     if (!option_id || !user_id) {
       return NextResponse.json(
         { error: "Missing option_id or user_id" },
@@ -23,7 +34,6 @@ export async function POST(
       );
     }
 
-    // Check if user already voted
     const { data: existingVote, error: checkError } = await supabase
       .from("poll_votes")
       .select("*")
@@ -42,7 +52,6 @@ export async function POST(
       );
     }
 
-    // Insert vote
     const { data, error } = await supabase
       .from("poll_votes")
       .insert([
@@ -65,7 +74,7 @@ export async function POST(
       vote: data,
     });
   } catch (err: any) {
-    console.error("VOTE ERROR:", err);
+    console.error("FULL VOTE ERROR:", err);
 
     return NextResponse.json(
       {

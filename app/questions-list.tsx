@@ -21,24 +21,25 @@ export default function QuestionsList({
   const [query, setQuery] = useState("");
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [loading, setLoading] = useState(false);
+  const [improving, setImproving] = useState(false);
 
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => setHydrated(true), []);
 
-  // Debounced search: wait 300ms after typing stops; each keystroke cancels
-  // the previous timer, so "deploying" fires one request, not nine.
   useEffect(() => {
     const id = setTimeout(async () => {
       const url = query
         ? `/api/questions?q=${encodeURIComponent(query)}`
         : `/api/questions`;
+
       const res = await fetch(url);
       const data = await res.json();
+
       setQuestions(data.questions);
       setHasMore(data.hasMore);
     }, 300);
 
-    return () => clearTimeout(id); // cancel the pending timer on each keystroke
+    return () => clearTimeout(id);
   }, [query]);
 
   async function submit() {
@@ -49,14 +50,43 @@ export default function QuestionsList({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ body: draft }),
     });
+
     const created = await res.json();
 
     setQuestions((qs) => [{ ...created, votes: 0 }, ...qs]);
     setDraft("");
   }
 
+  async function improveQuestion() {
+    if (!draft.trim()) return;
+
+    try {
+      setImproving(true);
+
+      const res = await fetch("/api/improve-question", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          question: draft,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (data.improved) {
+        setDraft(data.improved);
+      }
+    } catch (error) {
+      console.error("Improve error:", error);
+      alert("Failed to improve question");
+    } finally {
+      setImproving(false);
+    }
+  }
+
   async function upvote(id: string) {
-    // optimistic: assume success, update the UI now
     setQuestions((qs) =>
       qs.map((q) => (q.id === id ? { ...q, votes: q.votes + 1 } : q))
     );
@@ -67,7 +97,6 @@ export default function QuestionsList({
       body: JSON.stringify({ voterId: getVoterId() }),
     });
 
-    // server said no (already voted) — roll back
     if (!res.ok) {
       setQuestions((qs) =>
         qs.map((q) => (q.id === id ? { ...q, votes: q.votes - 1 } : q))
@@ -77,10 +106,16 @@ export default function QuestionsList({
 
   async function loadMore() {
     setLoading(true);
-    const res = await fetch(`/api/questions?offset=${questions.length}`);
+
+    const res = await fetch(
+      `/api/questions?offset=${questions.length}`
+    );
+
     const data = await res.json();
+
     setQuestions((qs) => [...qs, ...data.questions]);
     setHasMore(data.hasMore);
+
     setLoading(false);
   }
 
@@ -97,7 +132,19 @@ export default function QuestionsList({
           placeholder="Ask a question…"
           className="flex-1 rounded-md border px-3 py-2"
         />
-        <button onClick={submit} className="rounded-md border px-4 py-2">
+
+        <button
+          onClick={improveQuestion}
+          disabled={improving || !draft.trim()}
+          className="rounded-md border px-4 py-2 disabled:opacity-50"
+        >
+          {improving ? "Improving..." : "Improve"}
+        </button>
+
+        <button
+          onClick={submit}
+          className="rounded-md border px-4 py-2"
+        >
           Ask
         </button>
       </div>
@@ -112,15 +159,16 @@ export default function QuestionsList({
       <ul className="space-y-3">
         {questions.map((q) => (
           <li
-  key={`${q.id}-${q.body}`}
-  className="flex items-center gap-3 rounded-lg border p-3"
->
+            key={`${q.id}-${q.body}`}
+            className="flex items-center gap-3 rounded-lg border p-3"
+          >
             <button
               onClick={() => upvote(q.id)}
               className="rounded-md border px-3 py-1 font-mono"
             >
               ▲ {q.votes}
             </button>
+
             <span>{q.body}</span>
           </li>
         ))}
@@ -132,7 +180,7 @@ export default function QuestionsList({
           disabled={loading}
           className="rounded-md border px-4 py-2 disabled:opacity-50"
         >
-          {loading ? "Loading…" : "Load more"}
+          {loading ? "Loading..." : "Load more"}
         </button>
       )}
     </div>
