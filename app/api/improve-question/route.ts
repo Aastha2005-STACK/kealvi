@@ -1,10 +1,14 @@
 import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({});
-
 export async function POST(req: Request) {
   try {
+    console.log("GEMINI_API_KEY exists:", !!process.env.GEMINI_API_KEY);
+
     const { question } = await req.json();
+
+    const ai = new GoogleGenAI({
+      apiKey: process.env.GEMINI_API_KEY,
+    });
 
     const res = await ai.models.generateContent({
       model: "gemini-2.5-flash",
@@ -18,8 +22,12 @@ ${question}`,
       improved: res.text,
     });
   } catch (error: any) {
+    console.error("GEMINI ERROR:", error);
+
     return Response.json(
-      { error: error.message },
+      {
+        error: error?.message || "Unknown error",
+      },
       { status: 500 }
     );
   }
