@@ -1,38 +1,66 @@
 import { supabase } from "@/lib/supabase";
 
 export async function getQuestionsPage(offset: number, limit: number) {
-  const { data, error } = await supabase
+  const { data: questionsData, error: qError } = await supabase
     .from("questions")
-    .select("id, body, author, created_at, votes(count)")
+    .select("id, body, author, created_at")
     .order("created_at", { ascending: false })
-    .range(offset, offset + limit); // inclusive → asks for limit + 1 rows
+    .range(offset, offset + limit);
 
-  if (error) throw new Error(error.message);
+  if (qError) throw new Error(qError.message);
 
-  const rows = (data ?? []).map((q) => ({
+  const questionIds = (questionsData ?? []).map((q) => q.id);
+
+  const { data: votesData } = await supabase
+    .from("poll_votes")
+    .select("question_id");
+
+  const voteCountMap: Record<string, number> = {};
+
+  (votesData ?? []).forEach((v) => {
+    voteCountMap[v.question_id] =
+      (voteCountMap[v.question_id] || 0) + 1;
+  });
+
+  const rows = (questionsData ?? []).map((q) => ({
     id: q.id,
     body: q.body,
     author: q.author,
-    votes: q.votes?.[0]?.count ?? 0,
+    votes: voteCountMap[q.id] || 0,
   }));
 
-  const hasMore = rows.length > limit; // got the extra row? there's a next page
-  return { questions: rows.slice(0, limit), hasMore };
+  const hasMore = (questionsData?.length ?? 0) === limit;
+
+  return {
+    questions: rows,
+    hasMore,
+  };
 }
 
 export async function searchQuestions(q: string, limit: number) {
   const { data, error } = await supabase
     .from("questions")
-    .select("id, body, author, created_at, votes(count)")
+    .select("id, body, author, created_at")
     .textSearch("body", q, { type: "websearch", config: "english" })
     .limit(limit);
 
   if (error) throw new Error(error.message);
 
+  const { data: votesData } = await supabase
+    .from("poll_votes")
+    .select("question_id");
+
+  const voteCountMap: Record<string, number> = {};
+
+  (votesData ?? []).forEach((v) => {
+    voteCountMap[v.question_id] =
+      (voteCountMap[v.question_id] || 0) + 1;
+  });
+
   return (data ?? []).map((row) => ({
     id: row.id,
     body: row.body,
     author: row.author,
-    votes: row.votes?.[0]?.count ?? 0,
+    votes: voteCountMap[row.id] || 0,
   }));
 }
