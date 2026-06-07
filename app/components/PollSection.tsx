@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { getVoterId } from "@/lib/voter";
 
 export default function PollSection() {
   const [poll, setPoll] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [voted, setVoted] = useState(false);
 
-  const voterId = "user_1";
+  const voterId = getVoterId();
 
   useEffect(() => {
     fetchPoll();
