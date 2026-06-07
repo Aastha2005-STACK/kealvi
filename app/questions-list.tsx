@@ -16,7 +16,7 @@ export default function QuestionsList({
   initialQuestions: Question[];
   initialHasMore: boolean;
 }) {
-  const [questions, setQuestions] = useState(initialQuestions);
+  const [questions, setQuestions] = useState<Question[]>(initialQuestions || []);
   const [draft, setDraft] = useState("");
   const [query, setQuery] = useState("");
   const [hasMore, setHasMore] = useState(initialHasMore);
@@ -43,8 +43,10 @@ export default function QuestionsList({
     return () => clearTimeout(id);
   }, [query]);
 
-  const totalVotes = questions.reduce((sum, q) => sum + q.votes, 0);
-
+  const totalVotes = (questions || []).reduce(
+  (sum, q) => sum + (q.votes || 0),
+  0
+);
   async function submit() {
     if (!draft.trim()) return;
 
