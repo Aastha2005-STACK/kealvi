@@ -16,11 +16,9 @@ export default function QuestionsList({
   initialQuestions: Question[];
   initialHasMore: boolean;
 }) {
-  const safeInitial = Array.isArray(initialQuestions)
-  ? initialQuestions
-  : [];
+  const safeInitial = Array.isArray(initialQuestions) ? initialQuestions : [];
 
-const [questions, setQuestions] = useState<Question[]>(safeInitial);
+  const [questions, setQuestions] = useState<Question[]>(safeInitial);
   const [draft, setDraft] = useState("");
   const [query, setQuery] = useState("");
   const [hasMore, setHasMore] = useState(initialHasMore);
@@ -47,10 +45,6 @@ const [questions, setQuestions] = useState<Question[]>(safeInitial);
     return () => clearTimeout(id);
   }, [query]);
 
-  const totalVotes = (questions || []).reduce(
-  (sum, q) => sum + (q.votes || 0),
-  0
-);
   async function submit() {
     if (!draft.trim()) return;
 
@@ -74,12 +68,8 @@ const [questions, setQuestions] = useState<Question[]>(safeInitial);
 
       const res = await fetch("/api/improve-question", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          question: draft,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: draft }),
       });
 
       const data = await res.json();
@@ -143,26 +133,26 @@ const [questions, setQuestions] = useState<Question[]>(safeInitial);
         {hydrated ? "Interactive ✓" : "Loading interactivity…"}
       </p>
 
-      {/* INPUT SECTION */}
+      {/* INPUT */}
       <div className="flex gap-2">
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           placeholder="Ask a question…"
-          className="flex-1 rounded-xl border px-4 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+          className="flex-1 rounded-xl border px-4 py-2 shadow-sm"
         />
 
         <button
           onClick={improveQuestion}
           disabled={improving || !draft.trim()}
-          className="rounded-xl border px-4 py-2 bg-gray-100 hover:bg-gray-200 transition disabled:opacity-50"
+          className="rounded-xl border px-4 py-2 bg-gray-100"
         >
           {improving ? "Improving..." : "✨ Improve"}
         </button>
 
         <button
           onClick={submit}
-          className="rounded-xl border px-4 py-2 bg-blue-500 text-white hover:bg-blue-600 transition"
+          className="rounded-xl border px-4 py-2 bg-blue-500 text-white"
         >
           Ask
         </button>
@@ -176,14 +166,13 @@ const [questions, setQuestions] = useState<Question[]>(safeInitial);
         className="w-full rounded-xl border px-4 py-2 shadow-sm"
       />
 
-      {/* QUESTIONS LIST */}
+      {/* LIST */}
       <ul className="space-y-3">
         {(questions ?? []).map((q) => (
           <li
             key={`${q.id}-${q.body}`}
-            className="flex items-center gap-3 rounded-xl border p-4 bg-white shadow-sm hover:shadow-md transition"
+            className="flex items-center gap-3 rounded-xl border p-4 bg-white shadow-sm"
           >
-            {/* VOTE BUTTON */}
             <button
               onClick={() => upvote(q.id)}
               className={`rounded-md border px-3 py-1 font-mono transition ${
@@ -195,30 +184,7 @@ const [questions, setQuestions] = useState<Question[]>(safeInitial);
               ▲ {q.votes}
             </button>
 
-            {/* QUESTION + PROGRESS BAR */}
-            <div className="flex-1">
-              <p className="font-medium">{q.body}</p>
-
-              <div className="h-2 bg-gray-200 rounded mt-2 overflow-hidden">
-                <div
-                  className="h-full bg-blue-500 transition-all"
-                  style={{
-                    width:
-                      totalVotes === 0
-                        ? "0%"
-                        : `${(q.votes / totalVotes) * 100}%`,
-                  }}
-                />
-              </div>
-
-              <p className="text-xs text-gray-500 mt-1">
-                {totalVotes === 0
-                  ? "0%"
-                  : `${Math.round(
-                      (q.votes / totalVotes) * 100
-                    )}%`}
-              </p>
-            </div>
+            <p className="font-medium">{q.body}</p>
           </li>
         ))}
       </ul>
@@ -228,7 +194,7 @@ const [questions, setQuestions] = useState<Question[]>(safeInitial);
         <button
           onClick={loadMore}
           disabled={loading}
-          className="rounded-xl border px-4 py-2 w-full bg-gray-50 hover:bg-gray-100 transition disabled:opacity-50"
+          className="w-full rounded-xl border px-4 py-2 bg-gray-50"
         >
           {loading ? "Loading..." : "Load more"}
         </button>
