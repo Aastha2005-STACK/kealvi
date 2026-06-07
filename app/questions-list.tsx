@@ -16,7 +16,11 @@ export default function QuestionsList({
   initialQuestions: Question[];
   initialHasMore: boolean;
 }) {
-  const [questions, setQuestions] = useState<Question[]>(initialQuestions || []);
+  const safeInitial = Array.isArray(initialQuestions)
+  ? initialQuestions
+  : [];
+
+const [questions, setQuestions] = useState<Question[]>(safeInitial);
   const [draft, setDraft] = useState("");
   const [query, setQuery] = useState("");
   const [hasMore, setHasMore] = useState(initialHasMore);
@@ -174,7 +178,7 @@ export default function QuestionsList({
 
       {/* QUESTIONS LIST */}
       <ul className="space-y-3">
-        {questions.map((q) => (
+        {(questions ?? []).map((q) => (
           <li
             key={`${q.id}-${q.body}`}
             className="flex items-center gap-3 rounded-xl border p-4 bg-white shadow-sm hover:shadow-md transition"
