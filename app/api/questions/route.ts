@@ -49,7 +49,7 @@ export async function GET(req: Request) {
 // 🔥 VOTE ATTACHER (SAFE FIX)
 async function attachVotes(questions: any[]) {
   const { data: votes } = await supabase
-    .from("poll_votes")
+    .from("votes")
     .select("question_id");
 
   const map: Record<string, number> = {};
