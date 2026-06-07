@@ -5,11 +5,12 @@ export async function getQuestionsPage(offset: number, limit: number) {
     .from("questions")
     .select("id, body, author, created_at")
     .order("created_at", { ascending: false })
-    .range(offset, offset + limit);
+    .range(offset, offset + limit - 1); // 🔥 FIXED
 
-  if (qError) throw new Error(qError.message);
-
-  const questionIds = (questionsData ?? []).map((q) => q.id);
+  if (qError) {
+    console.error("QUESTIONS ERROR:", qError);
+    return { questions: [], hasMore: false };
+  }
 
   const { data: votesData } = await supabase
     .from("poll_votes")
@@ -29,11 +30,9 @@ export async function getQuestionsPage(offset: number, limit: number) {
     votes: voteCountMap[q.id] || 0,
   }));
 
-  const hasMore = (questionsData?.length ?? 0) === limit;
-
   return {
     questions: rows,
-    hasMore,
+    hasMore: (questionsData?.length ?? 0) === limit,
   };
 }
 
@@ -44,7 +43,10 @@ export async function searchQuestions(q: string, limit: number) {
     .textSearch("body", q, { type: "websearch", config: "english" })
     .limit(limit);
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    console.error("SEARCH ERROR:", error);
+    return [];
+  }
 
   const { data: votesData } = await supabase
     .from("poll_votes")
