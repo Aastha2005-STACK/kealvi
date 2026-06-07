@@ -17,20 +17,35 @@ export async function GET() {
     .limit(1);
 
   if (error) {
-    return NextResponse.json(
-      { error: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
   const poll = polls?.[0];
+
+  // 🔥 GET ALL VOTES
+  const { data: votes } = await supabase
+    .from("poll_votes")
+    .select("poll_id, option_id");
+
+  const voteCount: Record<string, number> = {};
+  let totalVotes = 0;
+
+  (votes ?? []).forEach((v) => {
+    if (v.poll_id === poll?.id) {
+      voteCount[v.option_id] = (voteCount[v.option_id] || 0) + 1;
+      totalVotes++;
+    }
+  });
 
   return NextResponse.json({
     poll: poll
       ? {
           ...poll,
-          options: poll.poll_options,
-          totalVotes: 0,
+          options: poll.poll_options.map((opt: any) => ({
+            ...opt,
+            votes: voteCount[opt.id] || 0,
+          })),
+          totalVotes,
         }
       : null,
   });
