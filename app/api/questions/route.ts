@@ -2,35 +2,24 @@ import { supabase } from "@/lib/supabase";
 
 const PAGE_SIZE = 10;
 
-// GET QUESTIONS
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const q = searchParams.get("q")?.trim();
   const offset = Number(searchParams.get("offset") ?? 0);
 
-  // 🔥 SEARCH MODE
+  // 🔥 SEARCH
   if (q) {
     const { data, error } = await supabase
       .from("questions")
-      .select(`
-        id,
-        body,
-        author,
-        poll_votes(count)
-      `)
+      .select("id, body, author")
       .ilike("body", `%${q}%`)
-      .limit(PAGE_SIZE);
+      .range(0, PAGE_SIZE - 1);
 
     if (error) {
       return Response.json({ error: error.message }, { status: 500 });
     }
 
-    const questions = data.map((item: any) => ({
-      id: item.id,
-      body: item.body,
-      author: item.author,
-      votes: item.poll_votes?.length || 0,
-    }));
+    const questions = await attachVotes(data ?? []);
 
     return Response.json({
       questions,
@@ -38,32 +27,41 @@ export async function GET(req: Request) {
     });
   }
 
-  // 🔥 PAGINATION MODE
+  // 🔥 PAGINATION
   const { data, error } = await supabase
     .from("questions")
-    .select(`
-      id,
-      body,
-      author,
-      poll_votes(count)
-    `)
+    .select("id, body, author")
+    .order("created_at", { ascending: false })
     .range(offset, offset + PAGE_SIZE - 1);
 
   if (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
 
-  const questions = data.map((item: any) => ({
-    id: item.id,
-    body: item.body,
-    author: item.author,
-    votes: item.poll_votes?.length || 0,
-  }));
+  const questions = await attachVotes(data ?? []);
 
   return Response.json({
     questions,
-    hasMore: data.length === PAGE_SIZE,
+    hasMore: (data?.length ?? 0) === PAGE_SIZE,
   });
+}
+
+// 🔥 VOTE ATTACHER (SAFE FIX)
+async function attachVotes(questions: any[]) {
+  const { data: votes } = await supabase
+    .from("poll_votes")
+    .select("question_id");
+
+  const map: Record<string, number> = {};
+
+  (votes ?? []).forEach((v) => {
+    map[v.question_id] = (map[v.question_id] || 0) + 1;
+  });
+
+  return questions.map((q) => ({
+    ...q,
+    votes: map[q.id] || 0,
+  }));
 }
 
 // CREATE QUESTION
