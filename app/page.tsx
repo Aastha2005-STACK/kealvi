@@ -7,7 +7,13 @@ export const dynamic = "force-dynamic";
 const PAGE_SIZE = 10;
 
 export default async function Page() {
-  const { questions, hasMore } = await getQuestionsPage(0, PAGE_SIZE);
+  const result = await getQuestionsPage(0, PAGE_SIZE);
+
+  const questions = Array.isArray(result?.questions)
+    ? result.questions
+    : [];
+
+  const hasMore = result?.hasMore ?? false;
 
   return (
     <main className="mx-auto max-w-2xl p-6">
