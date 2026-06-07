@@ -22,6 +22,7 @@ export default function QuestionsList({
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [loading, setLoading] = useState(false);
   const [improving, setImproving] = useState(false);
+  const [votedId, setVotedId] = useState<string | null>(null);
 
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => setHydrated(true), []);
@@ -41,6 +42,8 @@ export default function QuestionsList({
 
     return () => clearTimeout(id);
   }, [query]);
+
+  const totalVotes = questions.reduce((sum, q) => sum + q.votes, 0);
 
   async function submit() {
     if (!draft.trim()) return;
@@ -87,8 +90,12 @@ export default function QuestionsList({
   }
 
   async function upvote(id: string) {
+    setVotedId(id);
+
     setQuestions((qs) =>
-      qs.map((q) => (q.id === id ? { ...q, votes: q.votes + 1 } : q))
+      qs.map((q) =>
+        q.id === id ? { ...q, votes: q.votes + 1 } : q
+      )
     );
 
     const res = await fetch(`/api/questions/${id}/vote`, {
@@ -98,8 +105,12 @@ export default function QuestionsList({
     });
 
     if (!res.ok) {
+      setVotedId(null);
+
       setQuestions((qs) =>
-        qs.map((q) => (q.id === id ? { ...q, votes: q.votes - 1 } : q))
+        qs.map((q) =>
+          q.id === id ? { ...q, votes: q.votes - 1 } : q
+        )
       );
     }
   }
@@ -120,65 +131,98 @@ export default function QuestionsList({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5 max-w-2xl mx-auto">
+
       <p className="text-sm text-gray-500">
         {hydrated ? "Interactive ✓" : "Loading interactivity…"}
       </p>
 
+      {/* INPUT SECTION */}
       <div className="flex gap-2">
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           placeholder="Ask a question…"
-          className="flex-1 rounded-md border px-3 py-2"
+          className="flex-1 rounded-xl border px-4 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
         />
 
         <button
           onClick={improveQuestion}
           disabled={improving || !draft.trim()}
-          className="rounded-md border px-4 py-2 disabled:opacity-50"
+          className="rounded-xl border px-4 py-2 bg-gray-100 hover:bg-gray-200 transition disabled:opacity-50"
         >
-          {improving ? "Improving..." : "Improve"}
+          {improving ? "Improving..." : "✨ Improve"}
         </button>
 
         <button
           onClick={submit}
-          className="rounded-md border px-4 py-2"
+          className="rounded-xl border px-4 py-2 bg-blue-500 text-white hover:bg-blue-600 transition"
         >
           Ask
         </button>
       </div>
 
+      {/* SEARCH */}
       <input
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Search questions…"
-        className="w-full rounded-md border px-3 py-2"
+        className="w-full rounded-xl border px-4 py-2 shadow-sm"
       />
 
+      {/* QUESTIONS LIST */}
       <ul className="space-y-3">
         {questions.map((q) => (
           <li
             key={`${q.id}-${q.body}`}
-            className="flex items-center gap-3 rounded-lg border p-3"
+            className="flex items-center gap-3 rounded-xl border p-4 bg-white shadow-sm hover:shadow-md transition"
           >
+            {/* VOTE BUTTON */}
             <button
               onClick={() => upvote(q.id)}
-              className="rounded-md border px-3 py-1 font-mono"
+              className={`rounded-md border px-3 py-1 font-mono transition ${
+                votedId === q.id
+                  ? "bg-blue-500 text-white border-blue-500"
+                  : "hover:bg-gray-100"
+              }`}
             >
               ▲ {q.votes}
             </button>
 
-            <span>{q.body}</span>
+            {/* QUESTION + PROGRESS BAR */}
+            <div className="flex-1">
+              <p className="font-medium">{q.body}</p>
+
+              <div className="h-2 bg-gray-200 rounded mt-2 overflow-hidden">
+                <div
+                  className="h-full bg-blue-500 transition-all"
+                  style={{
+                    width:
+                      totalVotes === 0
+                        ? "0%"
+                        : `${(q.votes / totalVotes) * 100}%`,
+                  }}
+                />
+              </div>
+
+              <p className="text-xs text-gray-500 mt-1">
+                {totalVotes === 0
+                  ? "0%"
+                  : `${Math.round(
+                      (q.votes / totalVotes) * 100
+                    )}%`}
+              </p>
+            </div>
           </li>
         ))}
       </ul>
 
+      {/* LOAD MORE */}
       {hasMore && (
         <button
           onClick={loadMore}
           disabled={loading}
-          className="rounded-md border px-4 py-2 disabled:opacity-50"
+          className="rounded-xl border px-4 py-2 w-full bg-gray-50 hover:bg-gray-100 transition disabled:opacity-50"
         >
           {loading ? "Loading..." : "Load more"}
         </button>
